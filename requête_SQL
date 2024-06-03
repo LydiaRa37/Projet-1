@@ -67,7 +67,7 @@ GROUP BY p.productName
 ORDER BY grossMargin ASC
 LIMIT 5;
 
--- EVOLUTION DES VENTES n VS n-1
+-- EVOLUTION DES marges n VS n-1
 SELECT productLine,year,sales,
 LAG(sales, 1) OVER (PARTITION BY productLine ORDER BY year) AS previousYearSales,
 CASE 
