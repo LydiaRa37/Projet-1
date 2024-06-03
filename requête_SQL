@@ -79,7 +79,7 @@ FROM (
 SELECT 
 p.productLine,
 YEAR(o.orderDate) AS year,
-SUM(od.quantityOrdered * od.priceEach) AS sales
+SUM((od.priceEach - p.buyPrice) * od.quantityOrdered) AS sales
 FROM 
 orderdetails od
 JOIN 
