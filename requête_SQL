@@ -1,0 +1,137 @@
+SHOW columns FROM orderdetails;
+
+-- somme achats par facture
+SELECT orderNumber,
+SUM(priceEach * quantityOrdered) AS totalOrderAmount
+FROM orderdetails
+GROUP BY orderNumber;
+
+-- CA global
+SELECT 
+SUM(priceEach * quantityOrdered) AS globalRevenue
+FROM orderDetails;
+
+-- CA global/ année
+SELECT YEAR(o.orderDate) AS year,
+SUM(od.priceEach * od.quantityOrdered) AS globalRevenue
+FROM orders o
+JOIN 
+orderdetails od ON o.orderNumber = od.orderNumber
+GROUP BY 
+YEAR(o.orderDate)
+ORDER BY 
+year;
+
+-- CA GLOBAL PAR TRIMESTRE
+SELECT
+YEAR(o.orderDate) AS year,
+QUARTER(o.orderDate) AS quarter,
+SUM(od.priceEach * od.quantityOrdered) AS globalRevenue
+FROM orders o
+JOIN 
+orderdetails od ON o.orderNumber = od.orderNumber
+GROUP BY 
+YEAR(o.orderDate), QUARTER(o.orderDate)
+ORDER BY 
+year, quarter;
+
+-- Marge BRUTE/année
+SELECT YEAR(o.orderDate) AS year,
+SUM((od.priceEach - p.buyPrice) * od.quantityOrdered) AS grossMargin
+FROM 
+orderdetails od
+JOIN 
+orders o ON od.orderNumber = o.orderNumber
+JOIN 
+products p ON od.productCode = p.productCode
+GROUP
+BY YEAR(o.orderDate)
+ORDER BY 
+year;
+ 
+-- MARGE BRUT POUR LE TOP 5 produit
+SELECT p.productName,
+SUM((od.priceEach - p.buyPrice) * od.quantityOrdered) AS grossMargin
+FROM orderdetails od
+JOIN products p ON od.productCode = p.productCode
+GROUP BY p.productName
+ORDER BY grossMargin DESC
+LIMIT 5;
+
+-- MARGE BRUT FLOP DES 5 PRODUITS
+SELECT p.productName,
+SUM((od.priceEach - p.buyPrice) * od.quantityOrdered) AS grossMargin
+FROM orderdetails od
+JOIN products p ON od.productCode = p.productCode
+GROUP BY p.productName
+ORDER BY grossMargin ASC
+LIMIT 5;
+
+-- EVOLUTION DES VENTES n VS n-1
+SELECT productLine,year,sales,
+LAG(sales, 1) OVER (PARTITION BY productLine ORDER BY year) AS previousYearSales,
+CASE 
+	WHEN LAG(sales, 1) OVER (PARTITION BY productLine ORDER BY year) IS NOT NULL 
+	THEN (sales - LAG(sales, 1) OVER (PARTITION BY productLine ORDER BY year)) / LAG(sales, 1) OVER (PARTITION BY productLine ORDER BY year) * 100
+    ELSE NULL
+    END AS growthPercentage
+FROM (
+SELECT 
+p.productLine,
+YEAR(o.orderDate) AS year,
+SUM(od.quantityOrdered * od.priceEach) AS sales
+FROM 
+orderdetails od
+JOIN 
+products p ON od.productCode = p.productCode
+JOIN 
+orders o ON od.orderNumber = o.orderNumber
+WHERE 
+YEAR(o.orderDate) IN (2021, 2022, 2023)
+GROUP BY 
+p.productLine, YEAR(o.orderDate)
+) AS subquery
+ORDER BY 
+productLine, year;
+
+-- Variation des demandes pour chaque produit au cours des différents trimestres et années.
+SELECT 
+    p.productName,
+    YEAR(o.orderDate) AS year,
+    QUARTER(o.orderDate) AS quarter,
+    SUM(od.quantityOrdered) AS totalQuantityOrdered
+FROM 
+    orderdetails od
+JOIN 
+    products p ON od.productCode = p.productCode
+JOIN 
+    orders o ON od.orderNumber = o.orderNumber
+GROUP BY 
+    p.productName, YEAR(o.orderDate), QUARTER(o.orderDate)
+ORDER BY 
+    p.productName, year, quarter;
+
+-- Variation des demandes pour chaque ligne de produit au cours des différents trimestres et années
+SELECT 
+    p.productLine,
+    YEAR(o.orderDate) AS year,
+    QUARTER(o.orderDate) AS quarter,
+    SUM(od.quantityOrdered) AS totalQuantityOrdered
+FROM 
+    orderdetails od
+JOIN 
+    products p ON od.productCode = p.productCode
+JOIN 
+    orders o ON od.orderNumber = o.orderNumber
+GROUP BY 
+    p.productLine, YEAR(o.orderDate), QUARTER(o.orderDate)
+ORDER BY 
+    p.productLine, year, quarter;
+
+
+
+
+
+
+
+
