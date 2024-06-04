@@ -1,0 +1,26 @@
+--------Stock Flop 5 =
+
+
+SELECT 
+    productCode,
+    productName,
+    quantityInStock
+FROM 
+    products
+ORDER BY 
+    quantityInStock ASC
+LIMIT 5;
+
+
+-------Stock Top 5 = 
+
+SELECT
+  productCode,
+  productName,
+  quantityInStock
+FROM
+  products
+ORDER BY
+  quantityInStock DESC
+LIMIT
+  5;
