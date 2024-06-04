@@ -176,6 +176,40 @@ GROUP BY e.employeeNumber, e.lastName
 ORDER BY total_sales DESC
 LIMIT 2;
 
+--CA M vs M-1 par pays
 
+WITH MonthlySales AS (
+    SELECT 
+        c.country,
+        YEAR(o.orderDate) AS year,
+        MONTH(o.orderDate) AS month,
+        SUM(od.quantityOrdered * od.priceEach) AS total_sales
+    FROM customers c
+    JOIN orders o ON c.customerNumber = o.customerNumber
+    JOIN orderdetails od ON o.orderNumber = od.orderNumber
+    GROUP BY c.country, YEAR(o.orderDate), MONTH(o.orderDate)
+),
+SalesComparison AS (
+    SELECT
+        ms.country,
+        ms.year,
+        ms.month,
+        ms.total_sales,
+        LAG(ms.total_sales) OVER (PARTITION BY ms.country ORDER BY ms.year, ms.month) AS previous_month_sales
+    FROM MonthlySales ms
+)
+SELECT
+    country,
+    year,
+    month,
+    total_sales,
+    previous_month_sales,
+    (total_sales - previous_month_sales) AS sales_difference,
+    CASE
+        WHEN previous_month_sales IS NULL THEN NULL
+        ELSE (total_sales - previous_month_sales) / previous_month_sales * 100
+    END AS sales_percentage_change
+FROM SalesComparison
+ORDER BY country, year, month;
 
 
