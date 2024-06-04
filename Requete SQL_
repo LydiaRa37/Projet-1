@@ -165,8 +165,16 @@ ORDER BY
     p.productLine, year, quarter;
 
 
+-- CA 2 meilleurs vendeurs
 
-
+SELECT e.employeeNumber, e.lastName, SUM(od.quantityOrdered * od.priceEach) AS total_sales
+FROM employees e
+JOIN customers c ON e.employeeNumber = c.salesRepEmployeeNumber
+JOIN orders o ON c.customerNumber = o.customerNumber
+JOIN orderdetails od ON o.orderNumber = od.orderNumber
+GROUP BY e.employeeNumber, e.lastName
+ORDER BY total_sales DESC
+LIMIT 2;
 
 
 
