@@ -164,45 +164,42 @@ GROUP BY
 ORDER BY 
     p.productLine, year, quarter;
 
+-- CA DEU MEILLEURS VENDEURS MENSUEL AVEC CLASSEMENT
 
--- CA 2 meilleurs vendeurs
-
-WITH TopSellers AS (
-    SELECT e.employeeNumber, e.lastName, SUM(od.quantityOrdered * od.priceEach) AS total_sales
-    FROM employees e
-    JOIN customers c ON e.employeeNumber = c.salesRepEmployeeNumber
-    JOIN orders o ON c.customerNumber = o.customerNumber
-    JOIN orderdetails od ON o.orderNumber = od.orderNumber
-    GROUP BY e.employeeNumber, e.lastName
-    ORDER BY total_sales DESC
-    LIMIT 2
-),
-
--- Calculer le CA mensuel pour les deux meilleurs vendeurs
-MonthlySales AS (
+WITH MonthlySales AS (
     SELECT 
         e.employeeNumber, 
-        e.lastName, 
+        e.lastName AS employe, 
         YEAR(o.orderDate) AS year, 
-        MONTH(o.orderDate) AS month, 
-        SUM(od.quantityOrdered * od.priceEach) AS monthly_sales
+        MONTH(o.orderDate) AS mois, 
+        SUM(od.quantityOrdered * od.priceEach) AS CA
     FROM employees e
     JOIN customers c ON e.employeeNumber = c.salesRepEmployeeNumber
     JOIN orders o ON c.customerNumber = o.customerNumber
     JOIN orderdetails od ON o.orderNumber = od.orderNumber
-    WHERE e.employeeNumber IN (SELECT employeeNumber FROM TopSellers)
     GROUP BY e.employeeNumber, e.lastName, YEAR(o.orderDate), MONTH(o.orderDate)
+),
+
+RankedSales AS (
+    SELECT 
+        ms.employeeNumber, 
+        ms.employe, 
+        ms.year, 
+        ms.mois, 
+        ms.CA,
+        RANK() OVER (PARTITION BY ms.year, ms.mois ORDER BY ms.CA DESC) AS classement
+    FROM MonthlySales ms
 )
 
--- Sélectionner les résultats finaux
 SELECT 
-    ms.employeeNumber,
-    ms.lastName,
-    ms.year,
-    ms.month,
-    ms.monthly_sales
-FROM MonthlySales ms
-ORDER BY ms.employeeNumber, ms.year, ms.month;
+    rs.employeeNumber AS salesRepEmployeeNumber, 
+    CONCAT(rs.year, '-', LPAD(rs.mois, 2, '0')) AS mois, 
+    rs.employe, 
+    rs.CA, 
+    rs.classement
+FROM RankedSales rs
+WHERE rs.classement <= 2
+ORDER BY rs.year DESC, rs.mois DESC, rs.classement;
 
 --CA M vs M-1 par pays
 
