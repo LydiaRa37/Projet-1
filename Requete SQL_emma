@@ -24,3 +24,20 @@ ORDER BY
   quantityInStock DESC
 LIMIT
   5;
+
+-- Correction Imad stock top 5 =
+
+SELECT
+  products.productCode,
+  productName,
+  quantityInStock,
+  SUM(quantityOrdered) AS Qte_commande
+FROM
+  products
+JOIN 
+orderdetails ON orderdetails.productCode = products.productCode
+GROUP BY products.productCode
+ORDER BY
+  Qte_commande DESC
+LIMIT
+  5;
