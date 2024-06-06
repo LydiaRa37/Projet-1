@@ -1,0 +1,80 @@
+--------Stock Flop 5 =
+
+
+SELECT 
+    productCode,
+    productName,
+    quantityInStock
+FROM 
+    products
+ORDER BY 
+    quantityInStock ASC
+LIMIT 5;
+
+
+-------Stock Top 5 = 
+
+SELECT
+  productCode,
+  productName,
+  quantityInStock
+FROM
+  products
+ORDER BY
+  quantityInStock DESC
+LIMIT
+  5;
+
+-- Correction Imad stock top 5 =
+
+SELECT
+  products.productCode,
+  productName,
+  quantityInStock,
+  SUM(quantityOrdered) AS Qte_commande
+FROM
+  products
+JOIN 
+orderdetails ON orderdetails.productCode = products.productCode
+GROUP BY products.productCode
+ORDER BY
+  Qte_commande DESC
+LIMIT
+  5;
+
+-----Stock top 5 : Trouver la fonction SQL qui récup la date d’aujourd’hui sur l’ordinateur, et soustrait l’intervalle choisi.
+
+WITH MonthlySales AS (
+    SELECT 
+        YEAR(o.orderDate) AS year,
+        MONTH(o.orderDate) AS month,
+        SUM(od.quantityOrdered * od.priceEach) AS total_sales
+    FROM 
+        orders o
+    JOIN 
+        orderdetails od ON o.orderNumber = od.orderNumber
+    GROUP BY 
+        YEAR(o.orderDate), MONTH(o.orderDate)
+),
+SalesWithMovingAverage AS (
+    SELECT 
+        year,
+        month,
+        total_sales,
+        AVG(total_sales) OVER (ORDER BY year, month ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) AS moving_average
+    FROM 
+        MonthlySales
+)
+SELECT 
+    year,
+    month,
+    total_sales,
+    moving_average,
+    ((total_sales - moving_average) / moving_average) * 100 AS seasonality_rate
+FROM 
+    SalesWithMovingAverage
+ORDER BY 
+    year, month;
+
+
+
