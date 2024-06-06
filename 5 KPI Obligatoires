@@ -1,4 +1,4 @@
------ CA DEUX MEILLEURS VENDEURS MENSUEL AVEC CLASSEMENT
+-- CA DEUX MEILLEURS VENDEURS MENSUEL AVEC CLASSEMENT
 
 WITH MonthlySales AS (
     SELECT 
@@ -35,7 +35,7 @@ FROM RankedSales rs
 WHERE rs.classement <= 2
 ORDER BY rs.year DESC, rs.mois DESC, rs.classement;
 
---CA M vs M-1 par pays
+-- CA M vs M-1 par pays
 
 WITH MonthlySales AS (
     SELECT 
@@ -75,3 +75,76 @@ SELECT
     END AS evolution_2023_vs_2022
 FROM PivotedSales
 ORDER BY category, month; 
+
+-- Stock TOP 5 product 
+
+SELECT
+  productCode,
+  productName,
+  quantityInStock
+FROM
+  products
+ORDER BY
+  quantityInStock DESC
+LIMIT
+  5;
+
+-- Les impayés
+SELECT 
+    c.customerNumber,
+    c.customerName,
+    c.city,
+    c.country,
+    c.creditLimit,
+    SUM(od.quantityOrdered * od.priceEach) AS totalPurchases,
+    COALESCE(SUM(p.amount), 0) AS totalPayments,
+    COALESCE(SUM(p.amount), 0) - SUM(od.quantityOrdered * od.priceEach) AS montantImpayé
+FROM 
+    customers c
+JOIN 
+    orders o ON c.customerNumber = o.customerNumber
+JOIN 
+    orderdetails od ON o.orderNumber = od.orderNumber
+LEFT JOIN 
+    payments p ON c.customerNumber = p.customerNumber 
+              AND YEAR(o.orderDate) = YEAR(p.paymentDate)
+WHERE 
+    YEAR(o.orderDate) BETWEEN 2022 AND 2024
+GROUP BY 
+    c.customerNumber, c.customerName, c.city, c.country, c.creditLimit;
+
+-- Ventes Gamme n vs n-1 
+SELECT 
+    p.productLine,
+    MONTH(o.orderDate) AS month,
+    SUM(CASE WHEN YEAR(o.orderDate) = 2022 THEN od.quantityOrdered ELSE 0 END) AS totalQuantityOrdered_2022,
+    SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END) AS totalQuantityOrdered_2023,
+    SUM(CASE WHEN YEAR(o.orderDate) = 2024 THEN od.quantityOrdered ELSE 0 END) AS totalQuantityOrdered_2024,
+    CASE 
+        WHEN SUM(CASE WHEN YEAR(o.orderDate) = 2022 THEN od.quantityOrdered ELSE 0 END) > 0 
+        THEN ROUND(
+            ((SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END) - 
+              SUM(CASE WHEN YEAR(o.orderDate) = 2022 THEN od.quantityOrdered ELSE 0 END)) / 
+              SUM(CASE WHEN YEAR(o.orderDate) = 2022 THEN od.quantityOrdered ELSE 0 END)) * 100, 0)
+        ELSE NULL 
+    END AS tauxEvolution_2023,
+    CASE 
+        WHEN SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END) > 0 
+        THEN ROUND(
+            ((SUM(CASE WHEN YEAR(o.orderDate) = 2024 THEN od.quantityOrdered ELSE 0 END) - 
+              SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END)) / 
+              SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END)) * 100, 0)
+        ELSE NULL 
+    END AS tauxEvolution_2024
+FROM 
+    orderdetails od
+JOIN 
+    products p ON od.productCode = p.productCode
+JOIN 
+    orders o ON od.orderNumber = o.orderNumber
+GROUP BY 
+    p.productLine, MONTH(o.orderDate)
+ORDER BY 
+    p.productLine, month;
+
+
