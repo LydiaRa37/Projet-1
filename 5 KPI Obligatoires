@@ -112,3 +112,13 @@ GROUP BY
     p.productLine, MONTH(o.orderDate)
 ORDER BY 
     p.productLine, month;
+
+-- STOCK TOP 5
+
+SELECT YEAR(o.orderDate) as orderYear, p.productLine, p.productName, SUM(od.quantityOrdered) as totalSold, p.quantityInStock
+FROM products p
+JOIN orderdetails od ON p.productCode = od.productCode
+JOIN orders o ON od.orderNumber = o.orderNumber
+GROUP BY orderYear, p.productCode
+ORDER BY totalSold DESC
+LIMIT 5;
