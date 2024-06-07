@@ -76,36 +76,39 @@ SELECT
 FROM PivotedSales
 ORDER BY category, month; 
 
------STOCK TOP 5 : Trouver la fonction SQL qui récup la date d’aujourd’hui sur l’ordinateur, et soustrait l’intervalle choisi.
 
-WITH MonthlySales AS (
-    SELECT 
-        YEAR(o.orderDate) AS year,
-        MONTH(o.orderDate) AS month,
-        SUM(od.quantityOrdered * od.priceEach) AS total_sales
-    FROM 
-        orders o
-    JOIN 
-        orderdetails od ON o.orderNumber = od.orderNumber
-    GROUP BY 
-        YEAR(o.orderDate), MONTH(o.orderDate)
-),
-SalesWithMovingAverage AS (
-    SELECT 
-        year,
-        month,
-        total_sales,
-        AVG(total_sales) OVER (ORDER BY year, month ROWS BETWEEN 11 PRECEDING AND CURRENT ROW) AS moving_average
-    FROM 
-        MonthlySales
-)
+ -- Variation du nombte de vente par catégorie au cours des différents trimestres et années (en utilisant window fonction)
+		-- en ajoutant l'évolution
+
 SELECT 
-    year,
-    month,
-    total_sales,
-    moving_average,
-    ((total_sales - moving_average) / moving_average) * 100 AS seasonality_rate
+    p.productLine,
+    MONTH(o.orderDate) AS month,
+    SUM(CASE WHEN YEAR(o.orderDate) = 2022 THEN od.quantityOrdered ELSE 0 END) AS totalQuantityOrdered_2022,
+    SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END) AS totalQuantityOrdered_2023,
+    SUM(CASE WHEN YEAR(o.orderDate) = 2024 THEN od.quantityOrdered ELSE 0 END) AS totalQuantityOrdered_2024,
+    CASE 
+        WHEN SUM(CASE WHEN YEAR(o.orderDate) = 2022 THEN od.quantityOrdered ELSE 0 END) > 0 
+        THEN ROUND(
+            ((SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END) - 
+              SUM(CASE WHEN YEAR(o.orderDate) = 2022 THEN od.quantityOrdered ELSE 0 END)) / 
+              SUM(CASE WHEN YEAR(o.orderDate) = 2022 THEN od.quantityOrdered ELSE 0 END)) * 100, 0)
+        ELSE NULL 
+    END AS tauxEvolution_2023,
+    CASE 
+        WHEN SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END) > 0 
+        THEN ROUND(
+            ((SUM(CASE WHEN YEAR(o.orderDate) = 2024 THEN od.quantityOrdered ELSE 0 END) - 
+              SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END)) / 
+              SUM(CASE WHEN YEAR(o.orderDate) = 2023 THEN od.quantityOrdered ELSE 0 END)) * 100, 0)
+        ELSE NULL 
+    END AS tauxEvolution_2024
 FROM 
-    SalesWithMovingAverage
+    orderdetails od
+JOIN 
+    products p ON od.productCode = p.productCode
+JOIN 
+    orders o ON od.orderNumber = o.orderNumber
+GROUP BY 
+    p.productLine, MONTH(o.orderDate)
 ORDER BY 
-    year, month;
+    p.productLine, month;
