@@ -38,7 +38,7 @@ FROM RankedSales rs
 WHERE rs.classement <= 2
 ORDER BY rs.year DESC, rs.mois DESC, rs.classement;
 
---CA M vs M-1 par pays
+--Ventes Gamme n vs n-1
 
 SELECT 
     p.productLine,
