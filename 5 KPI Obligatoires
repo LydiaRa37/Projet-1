@@ -120,7 +120,7 @@ GROUP BY orderYear, p.productCode
 ORDER BY totalSold DESC
 LIMIT 5;
 
-- CA 5 DERNIERS MOIS PAR PAYS
+-- CA 5 DERNIERS MOIS PAR PAYS
 SELECT 
     c.country,
     YEAR(o.orderDate) AS orderYear,
@@ -138,3 +138,28 @@ GROUP BY
     c.country, YEAR(o.orderDate), MONTH(o.orderDate)
 ORDER BY 
     c.country, orderYear, orderMonth;
+
+-- IMPAYES
+
+- SELECT 
+    c.customerNumber,
+    c.customerName,
+    c.city,
+    c.country,
+    c.creditLimit,
+    SUM(od.quantityOrdered * od.priceEach) AS totalPurchases,
+    COALESCE(SUM(p.amount), 0) AS totalPayments,
+    COALESCE(SUM(p.amount), 0) - SUM(od.quantityOrdered * od.priceEach) AS montantImpayé
+FROM 
+    customers c
+JOIN 
+    orders o ON c.customerNumber = o.customerNumber
+JOIN 
+    orderdetails od ON o.orderNumber = od.orderNumber
+LEFT JOIN 
+    payments p ON c.customerNumber = p.customerNumber 
+              AND YEAR(o.orderDate) = YEAR(p.paymentDate)
+WHERE 
+    YEAR(o.orderDate) BETWEEN 2022 AND 2024
+GROUP BY 
+    c.customerNumber, c.customerName, c.city, c.country, c.creditLimit;
