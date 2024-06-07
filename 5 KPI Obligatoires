@@ -1,9 +1,12 @@
 ----- CA DEUX MEILLEURS VENDEURS MENSUEL AVEC CLASSEMENT
 
+----- CA DEUX MEILLEURS VENDEURS MENSUEL AVEC CLASSEMENT
+
 WITH MonthlySales AS (
     SELECT 
         e.employeeNumber, 
-        e.lastName AS employe, 
+        e.lastName AS lastname_employe,
+        e.firstname AS firstname_employe,
         YEAR(o.orderDate) AS year, 
         MONTH(o.orderDate) AS mois, 
         SUM(od.quantityOrdered * od.priceEach) AS CA
@@ -11,13 +14,14 @@ WITH MonthlySales AS (
     JOIN customers c ON e.employeeNumber = c.salesRepEmployeeNumber
     JOIN orders o ON c.customerNumber = o.customerNumber
     JOIN orderdetails od ON o.orderNumber = od.orderNumber
-    GROUP BY e.employeeNumber, e.lastName, YEAR(o.orderDate), MONTH(o.orderDate)
+    GROUP BY e.employeeNumber, e.lastName, e.firstname, YEAR(o.orderDate), MONTH(o.orderDate)
 ),
 
 RankedSales AS (
     SELECT 
         ms.employeeNumber, 
-        ms.employe, 
+        ms.lastname_employe, 
+        ms.firstname_employe,
         ms.year, 
         ms.mois, 
         ms.CA,
@@ -28,7 +32,8 @@ RankedSales AS (
 SELECT 
     rs.employeeNumber AS salesRepEmployeeNumber, 
     CONCAT(rs.year, '-', LPAD(rs.mois, 2, '0')) AS mois, 
-    rs.employe, 
+    rs.lastname_employe,
+    rs.firstname_employe,
     rs.CA, 
     rs.classement
 FROM RankedSales rs
